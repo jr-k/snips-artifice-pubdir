@@ -7,6 +7,7 @@ import posixpath
 import argparse
 import urllib
 import os
+import socket,errno
 
 from SimpleHTTPServer import SimpleHTTPRequestHandler
 from BaseHTTPServer import HTTPServer
@@ -44,7 +45,16 @@ def startServer(HandlerClass=RootedHTTPRequestHandler, ServerClass=RootedHTTPSer
 
     server_address = ('', args.port)
 
-    httpd = ServerClass(args.dir, server_address, HandlerClass)
+    httpd = None
+
+    try:
+        httpd = ServerClass(args.dir, server_address, HandlerClass)
+    except socket.error as error:
+        if error.errno == errno.EADDRINUSE:
+            print "[Artifice Pubdir]: " + os.strerror(error.errno)
+            return None
+        else:
+            raise
 
     sa = httpd.socket.getsockname()
     print "Serving HTTP on", sa[0], "port", sa[1], "..."
